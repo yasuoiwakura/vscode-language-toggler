@@ -31,20 +31,35 @@ jobs:
 
       - run: npm ci
 
+      # Nightly-style label for non-tag builds: <yyyy-mm-dd>_<branch>_<commit>.
+      # Tag builds use the tag name (e.g. v0.0.1).
+      - name: Compute build label
+        id: build
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            label="${GITHUB_REF_NAME}"
+          else
+            label="$(date -u +%Y-%m-%d)_${GITHUB_REF_NAME}_${GITHUB_SHA::7}"
+          fi
+          label="${label//\//_}"
+          name="vscode-language-toggler-${label}"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "vsix=${name}.vsix" >> "$GITHUB_OUTPUT"
+
       # Build the extension once. `vsce package` triggers `vscode:prepublish`
       # which runs the type-check, lint and esbuild bundle.
       - name: Package extension
         id: package
         run: |
-          npx @vscode/vsce package --out extension.vsix
-          echo "vsix=extension.vsix" >> "$GITHUB_OUTPUT"
+          npx @vscode/vsce package --out "${{ steps.build.outputs.vsix }}"
+          echo "vsix=${{ steps.build.outputs.vsix }}" >> "$GITHUB_OUTPUT"
 
       # 1/4 - always available, needs no secret
       - name: Upload VSIX as workflow artifact
         if: ${{ env.ENABLE_ARTIFACT == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-language-toggler
+          name: ${{ steps.build.outputs.name }}
           path: ${{ steps.package.outputs.vsix }}
 
       # 2/4 - only runs when the token is set

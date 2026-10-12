@@ -71,6 +71,18 @@ Targets 2 and 3 are skipped automatically when their secret is empty, so the
 workflow stays green before a registry account exists; only the artifact (and,
 on tags, the release asset) is produced.
 
+**Build naming:**
+
+| Build | Base name `<base>` | Artifact (zip) | VSIX inside |
+| --- | --- | --- | --- |
+| Tag `v*` | `vscode-language-toggler-v0.0.1` | `<base>.zip` | `<base>.vsix` |
+| Manual / branch (nightly-style) | `vscode-language-toggler-<yyyy-mm-dd>_<branch>_<commit>` | `<base>.zip` | `<base>.vsix` |
+
+The artifact zip and the VSIX share the same base name, e.g.
+`vscode-language-toggler-2026-10-12_main_abcdef1.zip` containing
+`vscode-language-toggler-2026-10-12_main_abcdef1.vsix` (slashes in branch names
+are replaced with `_`).
+
 > Build happens in CI: `vsce package` triggers `vscode:prepublish` ->
 > `npm run package` (type-check + lint + esbuild). `dist/` is git-ignored, so
 > nothing has to be committed for the build.

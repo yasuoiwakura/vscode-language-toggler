@@ -101,3 +101,8 @@ permanently by setting its flag in the workflow's `env` switch block to
 
 Trigger it by pushing a tag (`git tag v0.1.0 && git push origin v0.1.0`) or
 manually via *Actions -> Release -> Run workflow*.
+
+Build naming: a tag build uses the tag name
+(`vscode-language-toggler-v0.1.0.vsix`); a manual/branch build gets a
+nightly-style label `<yyyy-mm-dd>_<branch>_<commit>`. The artifact zip and the
+VSIX inside share the same base name. See `docs/PORTING.md` for the table.
