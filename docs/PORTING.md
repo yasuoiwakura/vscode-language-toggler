@@ -87,8 +87,22 @@ are replaced with `_`).
 > `npm run package` (type-check + lint + esbuild). `dist/` is git-ignored, so
 > nothing has to be committed for the build.
 
+**Pinned action versions** (all run on Node 24; require Actions Runner >= 2.327.1,
+satisfied by GitHub-hosted `ubuntu-latest`):
+
+| Action | Version |
+| --- | --- |
+| `actions/checkout` | `v7` |
+| `actions/setup-node` | `v7` (`package-manager-cache: false`) |
+| `actions/upload-artifact` | `v7` |
+| `HaaLeo/publish-vscode-extension` | `v2` (third-party) |
+| `softprops/action-gh-release` | `v3` (third-party) |
+
 ## Repository hygiene
 
+- [ ] **TODO: test the action upgrade** - trigger the workflow
+      (`Actions -> Release -> Run workflow`) and verify the *"Node.js 20 is
+      deprecated"* annotation is gone and the artifact is still produced.
 - [ ] Add a `.gitignore` entry for OS/editor files if needed (current `dist/`,
       `out/`, `node_modules/`, `*.vsix`, `.vscode-test/` are already ignored).
 - [ ] Decide whether to keep the Gitea history (`git push --all` keeps it) or
