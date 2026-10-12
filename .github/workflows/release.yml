@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# ---- Publish switches: set to 'false' to disable a target ----
+env:
+  ENABLE_ARTIFACT: 'true'
+  ENABLE_OPEN_VSX: 'true'
+  ENABLE_VS_MARKETPLACE: 'true'
+  ENABLE_RELEASE: 'true'
+  # Secrets must be exposed as env because `secrets.*` cannot be used in `if:`
+  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+  OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      # Build the extension once. `vsce package` triggers `vscode:prepublish`
+      # which runs the type-check, lint and esbuild bundle.
+      - name: Package extension
+        id: package
+        run: |
+          npx @vscode/vsce package --out extension.vsix
+          echo "vsix=extension.vsix" >> "$GITHUB_OUTPUT"
+
+      # 1/4 - always available, needs no secret
+      - name: Upload VSIX as workflow artifact
+        if: ${{ env.ENABLE_ARTIFACT == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-language-toggler
+          path: ${{ steps.package.outputs.vsix }}
+
+      # 2/4 - only runs when the token is set
+      - name: Publish to Open VSX
+        if: ${{ env.ENABLE_OPEN_VSX == 'true' && env.OPEN_VSX_TOKEN != '' }}
+        uses: HaaLeo/publish-vscode-extension@v2
+        with:
+          pat: ${{ env.OPEN_VSX_TOKEN }}
+          registryUrl: https://open-vsx.org
+          extensionFile: ${{ steps.package.outputs.vsix }}
+
+      # 3/4 - only runs when the token is set
+      - name: Publish to VS Marketplace
+        if: ${{ env.ENABLE_VS_MARKETPLACE == 'true' && env.VSCE_PAT != '' }}
+        uses: HaaLeo/publish-vscode-extension@v2
+        with:
+          pat: ${{ env.VSCE_PAT }}
+          registryUrl: https://marketplace.visualstudio.com
+          extensionFile: ${{ steps.package.outputs.vsix }}
+
+      # 4/4 - only on a version tag
+      - name: Attach VSIX to GitHub Release
+        if: ${{ env.ENABLE_RELEASE == 'true' && startsWith(github.ref, 'refs/tags/') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.vsix }}
